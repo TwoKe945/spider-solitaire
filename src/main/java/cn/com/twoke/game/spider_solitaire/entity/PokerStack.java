@@ -28,13 +28,17 @@ public class PokerStack extends ArrayList<Poker>{
 		hitbox.height = hitbox.height + (size() == 1 ? 0 : !item.isTurnOver() ? 10 : 20) ;
 		return true;
 	}
+	
+	
+	
 	@Override
-	public boolean containsAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return super.containsAll(c);
+	public Poker remove(int index) {
+		if (index >= size())return null;
+		Poker temPoker = super.remove(index);
+		hitbox.height = hitbox.height - (size() == 0 ? 0 : !temPoker.isTurnOver() ? 10 : 20) ;
+		return temPoker;
 	}
-	
-	
+
 	public int getLastPokerY() {
 		return this.hitbox.y + this.hitbox.height - 96 - 10;
 	}
@@ -46,7 +50,15 @@ public class PokerStack extends ArrayList<Poker>{
 	public void draw(Graphics g) {
 		int y = hitbox.y;
 		int i = 0; 
+		
+		g.drawString("size:" + size(), hitbox.x, hitbox.y + hitbox.height + 10);
+		
 		for(Poker temPoker : this.stream().filter(item -> item != solitaireGame.getDraggedPoker()).collect(Collectors.toList())) {
+			if (!temPoker.isTurnOver() && i == size() - 1) {
+				temPoker.setTurnOver(true);
+				this.hitbox.height += 10;
+			}
+			
 			temPoker.draw(g, hitbox.x, y , temPoker.isTurnOver());
 			y += !temPoker.isTurnOver() ? 10 : 20; 
 			i++;
@@ -57,8 +69,8 @@ public class PokerStack extends ArrayList<Poker>{
 		g.setColor(color);
 	}
 	
-	public boolean intHitBox(int x, int y) {
-		return hitbox.contains(x, y);
+	public boolean intersects(Rectangle rectangle) {
+		return hitbox.intersects(rectangle);
 	}
 	
 }

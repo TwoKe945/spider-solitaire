@@ -158,6 +158,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	private Rectangle draggedPokerHitbox;
 	private int draggedPokerOffsetX;
 	private int draggedPokerOffsetY;
+	private int draggedStackIndex = 0;
 
 	@Override
 	public void mousePressed(MouseEvent e) {
@@ -165,8 +166,12 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			if (pokerDeck.contains(e.getX(), e.getY())) {
 				firePokerPressed = true;
 			} else {
+				int i = 0;
 				for(PokerStack stack: pokerQueues) {
-					if (stack.isEmpty()) return;
+					if (stack.size() == 0) {
+						i++;
+						continue;	
+					}
 					Poker poker = stack.get(stack.size() - 1);
 					Rectangle hitbox = new Rectangle(stack.getLastPokerX(),
 							stack.getLastPokerY(), 71, 96);
@@ -175,9 +180,10 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 						draggedPokerOffsetX = e.getX() - hitbox.x;
 						draggedPokerOffsetY = e.getY() - hitbox.y;
 						draggedPokerHitbox = hitbox;
+						draggedStackIndex = i;
 						break;
 					}
-					
+					i++;
 				}
 			}
 		}
@@ -191,8 +197,20 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 				firePokerPressed = false;
 				doFirePoker(true);
 			}
+			System.out.println(draggedPoker);
 			if (Objects.nonNull(draggedPoker)) {
+				int i = 0;
+				for(PokerStack stack: pokerQueues) {
+					System.out.println("i:" + i + "  " + draggedStackIndex);
+					if (stack.intersects(draggedPokerHitbox)) {
+						pokerQueues[draggedStackIndex].remove(pokerQueues[draggedStackIndex].size() - 1);
+						pokerQueues[i].add(draggedPoker);
+						break;
+					}
+					i++;
+				}
 				draggedPoker = null;
+				draggedPokerHitbox = null;
 			}
 		}
 	}
