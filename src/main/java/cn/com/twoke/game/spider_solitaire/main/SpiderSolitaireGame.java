@@ -119,7 +119,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		if (firstUpdate) {
 			int autoFireSize = AUTO_FIRE_SIZE;
 			for (int i = 0; i < autoFireSize; i++) {
-				doFirePoker(i == autoFireSize - 1);
+				doFirePoker(i == autoFireSize - 1, true);
 			}
 			firstUpdate = false;
 		}
@@ -270,7 +270,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			if (pokerDeck.contains(e.getX(), e.getY()) && firePokerPressed) {
 				firePokerPressed = false;
-				doFirePoker(true);
+				doFirePoker(true, false);
 			}
 			if (draggedPokers.size() > 0) {
 				doPlacePokers();
@@ -305,8 +305,8 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	/**
 	 * 发牌操作
 	 */
-	private void doFirePoker(boolean turnOver) {
-		if (pokerDeckSize - 1 < 0) return;
+	private void doFirePoker(boolean turnOver, boolean isForceFire) {
+		if (!canFirePoker(isForceFire)) return;
 		for (int i = 0; i < 10; i++) {
 			if (firePokerIndex >= pokers.length) continue;
 			pokers[firePokerIndex].setTurnOver(turnOver);
@@ -315,6 +315,15 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		}
 		pokerDeckSize--;
 		updatePockerDeck();
+	}
+
+	private boolean canFirePoker(boolean isForceFire) {
+		if (isForceFire) return true;
+		if (pokerDeckSize - 1 < 0 ) return false;
+		for (int i = 0; i < pokerStacks.length; i++) {
+			if (pokerStacks[i].size() == 0) return false;
+		}
+		return true;
 	}
 
 	@Override
