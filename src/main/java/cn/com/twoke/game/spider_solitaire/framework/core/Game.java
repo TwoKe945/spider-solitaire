@@ -4,8 +4,6 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.function.Function;
 
-import cn.com.twoke.game.spider_solitaire.framework.utils.ResourceLoader;
-
 /**
  * 游戏启动
  */
@@ -72,7 +70,7 @@ public abstract class Game  implements Runnable  {
 
             if (System.currentTimeMillis() - lastCheck >= 1000 ) {
                 lastCheck = System.currentTimeMillis();
-//                System.out.println("FPS: " + frames + " | UPS: " + updates);
+                System.out.println("FPS: " + frames + " | UPS: " + updates);
                 frames = 0;
                 updates = 0;
             }

@@ -1,13 +1,14 @@
 package cn.com.twoke.game.spider_solitaire.entity;
 
-import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.enums.PokerNoEnum;
 import cn.com.twoke.game.spider_solitaire.enums.PokerTypeEnum;
+
+
+import static cn.com.twoke.game.spider_solitaire.config.Global.*;
 
 public class Poker  {
 	private PokerNoEnum no;
@@ -40,8 +41,8 @@ public class Poker  {
 		if (isFace) {
 			image = getFaceImage();
 		}
-		g.drawImage(image, startX, startY, 71, 96, null);
-		g.drawImage(ImageResource.POKER_MASK, startX, startY, 71, 96, null);
+		g.drawImage(image, startX, startY, POKER_WIDTH, POKER_HEIGHT, null);
+		g.drawImage(ImageResource.POKER_MASK, startX, startY, POKER_WIDTH, POKER_HEIGHT, null);
 
 	}
 
