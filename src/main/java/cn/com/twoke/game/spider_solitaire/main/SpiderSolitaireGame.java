@@ -231,32 +231,35 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	 * @param e
 	 */
 	private void checkAndPickUpPokers(MouseEvent e) {
-		out:for (int i = 0; i < pokerStacks.length; i++) {
+		for (int i = 0; i < pokerStacks.length; i++) {
 			PokerStack stack = pokerStacks[i];
 			if (stack.size() == 0) continue;
-			int stackSize  = stack.size();
-			for (int j = 0; j < stackSize; j++) {
-				Poker poker = stack.get(j);
-				if (!poker.isTurnOver()) continue;
-				Rectangle pressedHitbox = new Rectangle(stack.getLastPokerX(),
-						stack.getLastPokerY() - (stackSize - 1 - j) * TURN_OFFSET, POKER_WIDTH, stackSize - 1 == j ? POKER_HEIGHT : TURN_OFFSET);
-				if (pressedHitbox.contains(e.getX(), e.getY())) {
-					this.pressedHitbox = pressedHitbox;
-					for (int k = j; k < stackSize; k++) {
-						draggedPokers.add(stack.get(k));
-					}
-					draggedPokerOffsetX = e.getX() - pressedHitbox.x;
-					draggedPokerOffsetY = e.getY() - pressedHitbox.y;
-					draggedPokerHitbox = new Rectangle(pressedHitbox.x, pressedHitbox.y,
-							POKER_WIDTH,
-							POKER_HEIGHT + (stackSize - 1 - j) * TURN_OFFSET
-							);
-					draggedStackIndex = i;
-					draggedStartItemIndex = j;
-					break out;
+			if (doCheckAndPickUpPoker(i, e.getX(), e.getY(), stack)) break;
+		}
+	}
+
+	private boolean doCheckAndPickUpPoker(int stackIndex, int mouseX, int mouseY, PokerStack stack) {
+		int stackSize  = stack.size();
+		for (int i = stackSize - 1; i >= 0; i--) {
+			Rectangle pressedHitbox = new Rectangle(stack.getLastPokerX(),
+					stack.getLastPokerY() - (stackSize - 1 - i) * TURN_OFFSET, POKER_WIDTH, POKER_HEIGHT);
+			if (pressedHitbox.contains(mouseX, mouseY)) {
+				this.pressedHitbox = pressedHitbox;
+				for (int k = i; k < stackSize; k++) {
+					draggedPokers.add(stack.get(k));
 				}
+				draggedPokerOffsetX = mouseX - pressedHitbox.x;
+				draggedPokerOffsetY = mouseY - pressedHitbox.y;
+				draggedPokerHitbox = new Rectangle(pressedHitbox.x, pressedHitbox.y,
+						POKER_WIDTH,
+						POKER_HEIGHT + (stackSize - 1 - i) * TURN_OFFSET
+						);
+				draggedStackIndex = stackIndex;
+				draggedStartItemIndex = i;
+				return true;
 			}
 		}
+		return false;
 	}
 
 	@Override
