@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import cn.com.twoke.game.spider_solitaire.enums.PokerNoEnum;
+import cn.com.twoke.game.spider_solitaire.enums.PokerTypeEnum;
 import cn.com.twoke.game.spider_solitaire.main.SpiderSolitaireGame;
 
 import static cn.com.twoke.game.spider_solitaire.config.Global.*;
@@ -43,10 +45,33 @@ public class PokerStack extends ArrayList<Poker>{
 	}
 
 	public void update() {
+		updatePokers();
 		updateNotDraggingPokers();
 	}
 	
 	
+	private void updatePokers() {
+		int length = size();
+		if (length == 0) return;
+		if (get(length - 1).getNo() != PokerNoEnum.POKER_A) return;
+		int count = 0;
+		for (int i = length - 1; i > 0; i--) {
+			if (!get(i).isTurnOver() || get(i).getNo().getId() - get(i-1).getNo().getId() != -1
+					|| get(i).getType() != get(i-1).getType()
+					) {
+				break;
+			}
+			count++;
+		}
+		if (count == 12) {
+			PokerTypeEnum type = get(length - 1).getType();
+			for (int i = length - 1; i >= length - 13; i--) {
+				 if (get(i).isTurnOver()) this.remove(i);
+			}
+			solitaireGame.completed(type);
+		}
+	}
+
 	private void updateNotDraggingPokers() {
 		notDraggingPokers  = stream().filter(solitaireGame::notDragging).collect(Collectors.toList());		
 	}

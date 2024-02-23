@@ -35,6 +35,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	private Rectangle pokerDeck;
 	private boolean firstUpdate = true;
 	private Rectangle pressedHitbox;
+	private boolean gameCompleted = false;
 	
 	/**
 	 * 发牌计数器
@@ -68,6 +69,8 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	 * 拖动扑克牌开始的位置
 	 */
 	private int draggedStartItemIndex = 0;
+	
+	private List<Poker> completedPokers;
 	
 	public SpiderSolitaireGame() {
 		super(SpiderSolitaireGame::buildGamePanel);
@@ -112,6 +115,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			pokerStacks[i] = new PokerStack(this, (int)(OFFSET_X * (i + 1) + i * POKER_WIDTH), POKER_MARGIN_VALUE);
 		}
 		draggedPokers = new ArrayList<Poker>();
+		completedPokers = new ArrayList<Poker>();
 	}
 	
 	@Override
@@ -127,16 +131,36 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (PokerStack poker : pokerStacks) {
 			poker.update();
 		}
+		
+		updateGameState();
 	}
 	
+	private void updateGameState() {
+		if (completedPokers.size() == 8) {
+			gameCompleted = true;
+		}
+	}
+
 	@Override
 	protected void doDraw(Graphics g) {
 		drawBackground(g);
 		drawPlayingPokerDeck(g);
 		drawFirePokerDeck(g);
 		drawDraggedPokers(g);
+		drawCompletedPokers(g);
+		
+		if (gameCompleted) {
+			g.setColor(new Color(0,0,0,200));
+			g.drawString("Success!!!", 1024 / 2 , 512 / 2);
+		}
 	}
 	
+	private void drawCompletedPokers(Graphics g) {
+		for (int i = 0; i < completedPokers.size(); i++) {
+			completedPokers.get(i).draw(g, (int)(OFFSET_X + i * 10), pokerDeckStartY, true);
+		}
+	}
+
 	/**
 	 * 绘制拖动牌堆
 	 * @param g
@@ -218,6 +242,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	
 	@Override
 	public void mousePressed(MouseEvent e) {
+		if (gameCompleted) return;
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			if (pokerDeck.contains(e.getX(), e.getY())) {
 				firePokerPressed = true;
@@ -267,7 +292,8 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	private boolean canPickUp(PokerStack stack, int startIndex, int stackSize) {
 		for (int i = stackSize - 1; i > startIndex ; i--) {
-			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1) {
+			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1 || 
+					stack.get(i).getType() != stack.get(i - 1).getType()) {
 				return false;
 			}
 		}
@@ -276,6 +302,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		if (gameCompleted) return;
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			if (pokerDeck.contains(e.getX(), e.getY()) && firePokerPressed) {
 				firePokerPressed = false;
@@ -343,6 +370,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
+		if (gameCompleted) return;
 		if (draggedPokers.size() > 0) {
 			draggedPokerHitbox.x = e.getX() - draggedPokerOffsetX;
 			draggedPokerHitbox.y = e.getY() - draggedPokerOffsetY;
@@ -360,6 +388,10 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	
 	public boolean notDragging(Poker poker) {
 		return !draggedPokers.contains(poker);
+	}
+
+	public void completed(PokerTypeEnum type) {
+		completedPokers.add(new Poker(PokerNoEnum.POKER_K, type));
 	}
 	
 }
