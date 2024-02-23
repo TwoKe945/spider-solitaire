@@ -246,7 +246,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			if(!stack.get(i).isTurnOver()) continue;
 			Rectangle pressedHitbox = new Rectangle(stack.getLastPokerX(),
 					stack.getLastPokerY() - (stackSize - 1 - i) * TURN_OFFSET, POKER_WIDTH, stackSize - 1 == i ? POKER_HEIGHT : TURN_OFFSET);
-			if (pressedHitbox.contains(mouseX, mouseY)) {
+			if (pressedHitbox.contains(mouseX, mouseY) && canPickUp(stack, i, stackSize)) {
 				this.pressedHitbox = pressedHitbox;
 				for (int k = i; k < stackSize; k++) {
 					draggedPokers.add(stack.get(k));
@@ -263,6 +263,15 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			}
 		}
 		return false;
+	}
+
+	private boolean canPickUp(PokerStack stack, int startIndex, int stackSize) {
+		for (int i = stackSize - 1; i > startIndex ; i--) {
+			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
