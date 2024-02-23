@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.imageio.metadata.IIOMetadataFormat;
+
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.entity.Poker;
 import cn.com.twoke.game.spider_solitaire.entity.PokerStack;
@@ -117,7 +119,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		if (firstUpdate) {
 			int autoFireSize = AUTO_FIRE_SIZE;
 			for (int i = 0; i < autoFireSize; i++) {
-				doFirePoker(i == autoFireSize - 1);
+				doFirePoker(i == autoFireSize - 1, true);
 			}
 			firstUpdate = false;
 		}
@@ -241,9 +243,10 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	private boolean doCheckAndPickUpPoker(int stackIndex, int mouseX, int mouseY, PokerStack stack) {
 		int stackSize  = stack.size();
 		for (int i = stackSize - 1; i >= 0; i--) {
+			if(!stack.get(i).isTurnOver()) continue;
 			Rectangle pressedHitbox = new Rectangle(stack.getLastPokerX(),
-					stack.getLastPokerY() - (stackSize - 1 - i) * TURN_OFFSET, POKER_WIDTH, POKER_HEIGHT);
-			if (pressedHitbox.contains(mouseX, mouseY)) {
+					stack.getLastPokerY() - (stackSize - 1 - i) * TURN_OFFSET, POKER_WIDTH, stackSize - 1 == i ? POKER_HEIGHT : TURN_OFFSET);
+			if (pressedHitbox.contains(mouseX, mouseY) && canPickUp(stack, i, stackSize)) {
 				this.pressedHitbox = pressedHitbox;
 				for (int k = i; k < stackSize; k++) {
 					draggedPokers.add(stack.get(k));
@@ -262,12 +265,21 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		return false;
 	}
 
+	private boolean canPickUp(PokerStack stack, int startIndex, int stackSize) {
+		for (int i = stackSize - 1; i > startIndex ; i--) {
+			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			if (pokerDeck.contains(e.getX(), e.getY()) && firePokerPressed) {
 				firePokerPressed = false;
-				doFirePoker(true);
+				doFirePoker(true, false);
 			}
 			if (draggedPokers.size() > 0) {
 				doPlacePokers();
@@ -278,7 +290,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	private void doPlacePokers() {
 		for (int i = 0; i < pokerStacks.length; i++) {
 			PokerStack stack =  pokerStacks[i];
-			if (stack.intersects(draggedPokerHitbox)) { // 判断是否移动到另外的牌堆
+			if (stack.intersects(draggedPokerHitbox) && canPlace(stack, draggedPokers)) { // 判断是否移动到另外的牌堆
 				for (int j = 0; j < draggedPokers.size(); j++) { // 循环放置扑克到另外的牌堆
 					Poker poker = pokerStacks[draggedStackIndex].remove(draggedStartItemIndex);
 					stack.add(poker);
@@ -292,11 +304,18 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	}
 
 	
+	private boolean canPlace(PokerStack targetStack, List<Poker> draggedStack) {
+		if (targetStack.size() == 0) return true;
+		Poker draggedFirstPoker = draggedStack.get(0);
+		Poker targetLastPoker =   targetStack.get(targetStack.size() - 1);
+		return targetLastPoker.getNo().getId() - draggedFirstPoker.getNo().getId() == 1;
+	}
+
 	/**
 	 * 发牌操作
 	 */
-	private void doFirePoker(boolean turnOver) {
-		if (pokerDeckSize - 1 < 0) return;
+	private void doFirePoker(boolean turnOver, boolean isForceFire) {
+		if (!canFirePoker(isForceFire)) return;
 		for (int i = 0; i < 10; i++) {
 			if (firePokerIndex >= pokers.length) continue;
 			pokers[firePokerIndex].setTurnOver(turnOver);
@@ -305,6 +324,15 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		}
 		pokerDeckSize--;
 		updatePockerDeck();
+	}
+
+	private boolean canFirePoker(boolean isForceFire) {
+		if (isForceFire) return true;
+		if (pokerDeckSize - 1 < 0 ) return false;
+		for (int i = 0; i < pokerStacks.length; i++) {
+			if (pokerStacks[i].size() == 0) return false;
+		}
+		return true;
 	}
 
 	@Override
