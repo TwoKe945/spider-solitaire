@@ -53,7 +53,7 @@ public class PokerStack extends ArrayList<Poker>{
 		
 		g.drawString("size:" + size(), hitbox.x, hitbox.y + hitbox.height + 10);
 		
-		for(Poker temPoker : this.stream().filter(item -> item != solitaireGame.getDraggedPoker()).collect(Collectors.toList())) {
+		for(Poker temPoker : this.stream().filter(item -> !solitaireGame.getDraggedPokers().contains(item)).collect(Collectors.toList())) {
 			if (!temPoker.isTurnOver() && i == size() - 1) {
 				temPoker.setTurnOver(true);
 				this.hitbox.height += 10;

@@ -6,7 +6,9 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collector;
@@ -39,7 +41,20 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	private void initPokers() {
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 13; j++) {
-				pokers[i * 13 + j] = new Poker(PokerNoEnum.of(j), PokerTypeEnum.HEI);
+				PokerTypeEnum type = null;
+//				if (i == 0 || i == 1) {
+					type = PokerTypeEnum.HEI;
+//				}
+//				if (i == 2 || i == 3) {
+//					type = PokerTypeEnum.HONG;
+//				}
+//				if (i == 4 || i == 5) {
+//					type = PokerTypeEnum.MEI;
+//				}
+//				if (i == 6 || i == 7) {
+//					type = PokerTypeEnum.FANG;
+//				}
+				pokers[i * 13 + j] = new Poker(PokerNoEnum.of(j), type);
 			}
 		}
 		shuffle(pokers);
@@ -82,6 +97,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (int i = 0; i < pokerQueues.length; i++) {
 			pokerQueues[i] = new PokerStack(this, (int)(OFFSET_X * (i + 1) + i * 71), 20);
 		}
+		draggedPokers = new ArrayList<Poker>();
 	}
 	
 	boolean firstUpdate = true;
@@ -102,8 +118,8 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	
 	
 
-	public Poker getDraggedPoker() {
-		return draggedPoker;
+	public List<Poker> getDraggedPokers() {
+		return draggedPokers;
 	}
 
 	@Override
@@ -134,8 +150,22 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		g.setColor(Color.RED);
 		g.drawRect(pokerDeck.x, pokerDeck.y, pokerDeck.width, pokerDeck.height);
 		
-		if (Objects.nonNull(draggedPoker) && Objects.nonNull(draggedPokerHitbox)) {
-			draggedPoker.draw(g, draggedPokerHitbox.x, draggedPokerHitbox.y, true);
+		if (draggedPokers.size() > 0 && Objects.nonNull(draggedPokerHitbox)) {
+			int i = 0;
+			for (Poker draggedPoker: draggedPokers) {
+				draggedPoker.draw(g, draggedPokerHitbox.x, draggedPokerHitbox.y + i * 20, true);
+				i++;
+			}
+		}
+		
+		if(Objects.nonNull(hitbox)) {
+			g.setColor(Color.red);
+			g.drawRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
+			if (Objects.nonNull(draggedPokerHitbox)) {
+				g.setColor(Color.YELLOW);
+				g.drawRect(draggedPokerHitbox.x, draggedPokerHitbox.y,
+						draggedPokerHitbox.width, draggedPokerHitbox.height);
+			}
 		}
 	}
 
@@ -154,36 +184,49 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		pokerDeck.width = pokerDeckSize == 0 ? 71 : (pokerDeckSize - 1) * pokerDeckOffsetX + 71;
 	}
 	
-	private Poker draggedPoker;
+	private List<Poker> draggedPokers;
 	private Rectangle draggedPokerHitbox;
 	private int draggedPokerOffsetX;
 	private int draggedPokerOffsetY;
 	private int draggedStackIndex = 0;
-
+	private int draggedStartItemIndex = 0;
+	
+	private Rectangle hitbox;
+	
 	@Override
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			if (pokerDeck.contains(e.getX(), e.getY())) {
 				firePokerPressed = true;
 			} else {
-				int i = 0;
-				for(PokerStack stack: pokerQueues) {
-					if (stack.size() == 0) {
-						i++;
-						continue;	
+				out:for (int i = 0; i < pokerQueues.length; i++) {
+					PokerStack stack = pokerQueues[i];
+					if (stack.size() == 0) continue;
+					int stackSize  = stack.size();
+					inner: for (int j = 0; j < stackSize; j++) {
+						Poker poker = stack.get(j);
+						if (!poker.isTurnOver()) continue inner;
+						Rectangle hitbox = new Rectangle(stack.getLastPokerX(),
+								stack.getLastPokerY() - (stackSize - 1 - j) * 20, 71, stackSize - 1 == j ? 96 : 20);
+						System.out.println("i: ["+i+"]["+j+"] hitbox"+hitbox);
+						System.out.println("i: ["+i+"]["+j+"] x:"+stack.getLastPokerX() + " y:"+(stack.getLastPokerY() - (stackSize - 1 - i) * 20));
+						
+						if (hitbox.contains(e.getX(), e.getY())) {
+							this.hitbox = hitbox;
+							for (int k = j; k < stackSize; k++) {
+								draggedPokers.add(stack.get(k));
+							}
+							draggedPokerOffsetX = e.getX() - hitbox.x;
+							draggedPokerOffsetY = e.getY() - hitbox.y;
+							draggedPokerHitbox = new Rectangle(hitbox.x, hitbox.y,
+									71,
+									96 + (stackSize - 1 - j) * 20
+									);
+							draggedStackIndex = i;
+							draggedStartItemIndex = j;
+							break out;
+						}
 					}
-					Poker poker = stack.get(stack.size() - 1);
-					Rectangle hitbox = new Rectangle(stack.getLastPokerX(),
-							stack.getLastPokerY(), 71, 96);
-					if (hitbox.contains(e.getX(), e.getY())) {
-						draggedPoker = poker;
-						draggedPokerOffsetX = e.getX() - hitbox.x;
-						draggedPokerOffsetY = e.getY() - hitbox.y;
-						draggedPokerHitbox = hitbox;
-						draggedStackIndex = i;
-						break;
-					}
-					i++;
 				}
 			}
 		}
@@ -197,19 +240,20 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 				firePokerPressed = false;
 				doFirePoker(true);
 			}
-			System.out.println(draggedPoker);
-			if (Objects.nonNull(draggedPoker)) {
+			if (draggedPokers.size() > 0) {
 				int i = 0;
 				for(PokerStack stack: pokerQueues) {
-					System.out.println("i:" + i + "  " + draggedStackIndex);
 					if (stack.intersects(draggedPokerHitbox)) {
-						pokerQueues[draggedStackIndex].remove(pokerQueues[draggedStackIndex].size() - 1);
-						pokerQueues[i].add(draggedPoker);
+						System.out.println("i:" + i + "  " + draggedStackIndex + "  "+ draggedStartItemIndex);
+						for (int j = 0; j < draggedPokers.size(); j++) {
+							Poker poker = pokerQueues[draggedStackIndex].remove(draggedStartItemIndex);
+							stack.add(poker);
+						}
 						break;
 					}
 					i++;
 				}
-				draggedPoker = null;
+				draggedPokers.clear();
 				draggedPokerHitbox = null;
 			}
 		}
@@ -240,7 +284,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		if (Objects.nonNull(draggedPoker)) {
+		if (draggedPokers.size() > 0) {
 			draggedPokerHitbox.x = e.getX() - draggedPokerOffsetX;
 			draggedPokerHitbox.y = e.getY() - draggedPokerOffsetY;
 		}
