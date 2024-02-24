@@ -2,7 +2,7 @@ package cn.com.twoke.game.spider_solitaire.config;
 
 public class Global {
 
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 	
 	public static void debug(Runnable runnable) {
 		if (DEBUG) {

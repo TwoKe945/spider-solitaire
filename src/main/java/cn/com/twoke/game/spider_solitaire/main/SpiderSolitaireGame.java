@@ -7,10 +7,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
-import javax.imageio.metadata.IIOMetadataFormat;
 
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.entity.Poker;
@@ -92,6 +91,11 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 13; j++) {
 				PokerTypeEnum type = PokerTypeEnum.HEI;
+//				if (Arrays.asList(0,1,2,3).contains(j)) {
+//					type = PokerTypeEnum.HEI;
+//				} else {
+//					type = PokerTypeEnum.HONG;
+//				}
 				pokers[i * 13 + j] = new Poker(PokerNoEnum.of(j), type);
 			}
 		}
@@ -292,8 +296,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	private boolean canPickUp(PokerStack stack, int startIndex, int stackSize) {
 		for (int i = stackSize - 1; i > startIndex ; i--) {
-			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1 || 
-					stack.get(i).getType() != stack.get(i - 1).getType()) {
+			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1) {
 				return false;
 			}
 		}
