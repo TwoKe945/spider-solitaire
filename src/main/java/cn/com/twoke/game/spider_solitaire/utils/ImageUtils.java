@@ -79,4 +79,24 @@ public class ImageUtils {
         int color_range = 215;
         return (red >= color_range && green >= color_range && blue >= color_range);
     }
+    
+    public static BufferedImage inverse(BufferedImage imgsrc) {
+		try {
+			//创建一个不带透明度的图片
+			BufferedImage back=new BufferedImage(imgsrc.getWidth(), imgsrc.getHeight(),BufferedImage.TYPE_INT_RGB);
+			int width = imgsrc.getWidth();  
+	        int height = imgsrc.getHeight();  
+	        for (int i = 0; i < height; i++) { 
+	        	for (int j = 0; j < width; j++) {  
+	                int pixel = imgsrc.getRGB(j, i); 
+	                back.setRGB(j,i,0xFFFFFF-pixel);
+	            }
+	        }
+			return back;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 }

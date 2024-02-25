@@ -1,6 +1,7 @@
 package cn.com.twoke.game.spider_solitaire.main;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
@@ -10,11 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import javax.imageio.metadata.IIOMetadataFormat;
-
+import cn.com.twoke.game.spider_solitaire.audio.AudioPlayer;
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.entity.Poker;
 import cn.com.twoke.game.spider_solitaire.entity.PokerStack;
+import cn.com.twoke.game.spider_solitaire.entity.PokerStackManage;
+import cn.com.twoke.game.spider_solitaire.entity.ScorePanel;
 import cn.com.twoke.game.spider_solitaire.enums.PokerNoEnum;
 import cn.com.twoke.game.spider_solitaire.enums.PokerTypeEnum;
 import cn.com.twoke.game.spider_solitaire.framework.core.Game;
@@ -22,21 +24,19 @@ import cn.com.twoke.game.spider_solitaire.framework.core.GamePanel;
 import cn.com.twoke.game.spider_solitaire.utils.PokerUtils;
 import static cn.com.twoke.game.spider_solitaire.config.Global.*;
 
+
 public class SpiderSolitaireGame extends Game implements MouseListener, MouseMotionListener {
-
-	private Poker[] pokers;
-	private PokerStack[] pokerStacks;
-
+	public static final float OFFSET_X = (WIDTH - POKER_WIDTH * 10) / 11;
+	public static final int pokerDeckStartX = (int)(OFFSET_X * 10 + 9 * POKER_WIDTH);
+	public static final int pokerDeckStartY = HEIGHT - POKER_HEIGHT - POKER_MARGIN_VALUE;
+	public static final int pokerDeckOffsetX = 5;
 	private int pokerDeckSize = 0;
-	private static final float OFFSET_X = 28.54f;
-	private static final int pokerDeckStartX = (int)(OFFSET_X * 10 + 9 * POKER_WIDTH);
-	private static final int pokerDeckStartY = 512 - POKER_HEIGHT - POKER_MARGIN_VALUE;
-	private static final int pokerDeckOffsetX = 5;
 	private Rectangle pokerDeck;
-	private boolean firstUpdate = true;
-	private Rectangle pressedHitbox;
-	private boolean gameCompleted = false;
 	
+	private boolean firstUpdate = true;
+	private boolean gameCompleted = false;
+	private PokerStackManage pokerStackManage;
+	private Poker[] pokers;
 	/**
 	 * 发牌计数器
 	 */
@@ -45,60 +45,35 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	 * 是否按下发牌堆
 	 */
 	private boolean firePokerPressed = false;
-	/**
-	 * 被拖动的扑克牌
-	 */
-	private List<Poker> draggedPokers;
-	/**
-	 * 扑克牌拖动时的碰撞盒子
-	 */
-	private Rectangle draggedPokerHitbox;
-	/**
-	 * 拖动开始时鼠标与扑克牌X轴的偏移值
-	 */
-	private int draggedPokerOffsetX;
-	/**
-	 * 拖动开始时鼠标与扑克牌Y轴的偏移值
-	 */
-	private int draggedPokerOffsetY;
-	/**
-	 * 扑克牌拖动的牌堆索引
-	 */
-	private int draggedStackIndex = 0;
-	/**
-	 * 拖动扑克牌开始的位置
-	 */
-	private int draggedStartItemIndex = 0;
 	
 	private List<Poker> completedPokers;
+	private ScorePanel scorePanel;
+	private AudioPlayer audioPlayer;
 	
 	public SpiderSolitaireGame() {
 		super(SpiderSolitaireGame::buildGamePanel);
-		initFirePockerDeck();
+		initClass();
 		addMouseListener();
+		
 	}
 	
-	/**
-	 * 初始化发牌堆
-	 */
-	private void initFirePockerDeck() {
-		initPokers(pokers);
-		PokerUtils.shuffle(pokers);
+	private void initClass() {
+		pokerDeck = new Rectangle(pokerDeckStartX, pokerDeckStartY, POKER_WIDTH, POKER_HEIGHT);
+		pokerStackManage = new PokerStackManage(this);
+		scorePanel = new ScorePanel(200, 100, this);
+		audioPlayer = new AudioPlayer();
+		
+	}
+
+	public void loadPokers(Poker[] pokers) {
+		this.pokers = pokers;
 		pokerDeckSize = pokers.length % 10 == 0 ? pokers.length / 10 : (pokers.length / 10) + 1;
 		updatePockerDeck();
 	}
 	
-	private void initPokers(Poker[] pokers) {
-		for (int i = 0; i < 8; i++) {
-			for (int j = 0; j < 13; j++) {
-				PokerTypeEnum type = PokerTypeEnum.HEI;
-				pokers[i * 13 + j] = new Poker(PokerNoEnum.of(j), type);
-			}
-		}
-	}
 	
 	private static GamePanel buildGamePanel(Game game) {
-		return new GamePanel(game, 1024, 512);
+		return new GamePanel(game, WIDTH, HEIGHT);
 	}
 	
 	private void addMouseListener() {
@@ -108,16 +83,17 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	
 	@Override
 	protected void initialzer() {
-		pokers = new Poker[8 * 13];
-		pokerDeck = new Rectangle(pokerDeckStartX, pokerDeckStartY, POKER_WIDTH, POKER_HEIGHT);
-		pokerStacks = new PokerStack[10];
-		for (int i = 0; i < pokerStacks.length; i++) {
-			pokerStacks[i] = new PokerStack(this, (int)(OFFSET_X * (i + 1) + i * POKER_WIDTH), POKER_MARGIN_VALUE);
-		}
-		draggedPokers = new ArrayList<Poker>();
 		completedPokers = new ArrayList<Poker>();
 	}
 	
+	public AudioPlayer getAudioPlayer() {
+		return audioPlayer;
+	}
+
+	public void setAudioPlayer(AudioPlayer audioPlayer) {
+		this.audioPlayer = audioPlayer;
+	}
+
 	@Override
 	protected void update() {
 		if (firstUpdate) {
@@ -127,63 +103,51 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			}
 			firstUpdate = false;
 		}
-		
-		for (PokerStack poker : pokerStacks) {
-			poker.update();
-		}
-		
+		pokerStackManage.update();
 		updateGameState();
+		if (firing) {
+			if (fireAudioCount >= 100) {
+				audioPlayer.stopSong();
+				fireAudioCount = 0;
+			}
+			fireAudioCount ++;
+		}
 	}
+	
+	private boolean playgameCompletedAudio = true;
 	
 	private void updateGameState() {
 		if (completedPokers.size() == 8) {
 			gameCompleted = true;
+			if (playgameCompletedAudio) {
+				audioPlayer.playEffect(AudioPlayer.SUCCESS);
+				playgameCompletedAudio = false;
+			}
 		}
 	}
 
 	@Override
 	protected void doDraw(Graphics g) {
+		g.setFont(FONT);
 		drawBackground(g);
-		drawPlayingPokerDeck(g);
 		drawFirePokerDeck(g);
-		drawDraggedPokers(g);
+		pokerStackManage.draw(g);
 		drawCompletedPokers(g);
+		scorePanel.draw(g);
 		
 		if (gameCompleted) {
-			g.setColor(new Color(0,0,0,200));
-			g.drawString("Success!!!", 1024 / 2 , 512 / 2);
+			g.setColor(Color.WHITE);
+			g.setFont(new Font("仿宋",Font.BOLD,100));
+			g.drawString("恭喜您!", (WIDTH - 300) / 2 , HEIGHT / 2);
 		}
+		
+//		g.drawImage(ImageUtils.inverse(ImageResource.POKER_HEIS[12]), 0, 0, POKER_WIDTH, POKER_HEIGHT, null);
 	}
-	
+
 	private void drawCompletedPokers(Graphics g) {
 		for (int i = 0; i < completedPokers.size(); i++) {
 			completedPokers.get(i).draw(g, (int)(OFFSET_X + i * 10), pokerDeckStartY, true);
 		}
-	}
-
-	/**
-	 * 绘制拖动牌堆
-	 * @param g
-	 */
-	private void drawDraggedPokers(Graphics g) {
-		if (draggedPokers.size() > 0 && Objects.nonNull(draggedPokerHitbox)) {
-			int i = 0;
-			for (Poker draggedPoker: draggedPokers) {
-				draggedPoker.draw(g, draggedPokerHitbox.x, draggedPokerHitbox.y + i * TURN_OFFSET, true);
-				i++;
-			}
-		}
-		debug(() -> {
-			if (Objects.nonNull(pressedHitbox)) {
-				g.setColor(Color.GREEN);
-				g.drawRect(pressedHitbox.x, pressedHitbox.y, pressedHitbox.width, pressedHitbox.height);
-			}
-			if ( Objects.nonNull(draggedPokerHitbox)) {
-				g.setColor(Color.YELLOW);
-				g.drawRect(draggedPokerHitbox.x, draggedPokerHitbox.y,
-						draggedPokerHitbox.width, draggedPokerHitbox.height);
-			}
-		});
 	}
 
 	/**
@@ -203,28 +167,12 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	}
 
 	/**
-	 * 绘制游戏牌堆
-	 * @param g
-	 */
-	private void drawPlayingPokerDeck(Graphics g) {
-		for (int i = 0; i < pokerStacks.length; i++) {
-			int x =  (int)(OFFSET_X * (i + 1) + i * POKER_WIDTH);
-			g.drawImage(ImageResource.POKER_EMPTY, x, POKER_MARGIN_VALUE, POKER_WIDTH, POKER_HEIGHT, null);
-			pokerStacks[i].draw(g);
-			final int sizeIndex = i;
-			debug(() -> {
-				g.drawString("size:" + pokerStacks[sizeIndex].size(), x, pokerStacks[sizeIndex].getLastPokerY() + TURN_OFFSET + POKER_HEIGHT );
-			});
-		}
-	}
-
-	/**
 	 * 绘制背景
 	 * @param g
 	 */
 	private void drawBackground(Graphics g) {
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 8; y++) {
+		for (int x = 0; x < 20; x++) {
+			for (int y = 0; y < 12; y++) {
 				g.drawImage(ImageResource.BACKGROUND, x * 64 , y * 64, 64, 64, null);
 			}
 		}
@@ -234,12 +182,6 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	public void mouseClicked(MouseEvent e) {
 	}
 	
-	public void updatePockerDeck() {
-		pokerDeck.x = pokerDeckSize == 0 ? pokerDeckStartX : pokerDeckStartX - (pokerDeckSize - 1) * pokerDeckOffsetX;
-		pokerDeck.y = pokerDeckStartY;
-		pokerDeck.width = pokerDeckSize == 0 ? POKER_WIDTH : (pokerDeckSize - 1) * pokerDeckOffsetX + POKER_WIDTH;
-	}
-	
 	@Override
 	public void mousePressed(MouseEvent e) {
 		if (gameCompleted) return;
@@ -247,58 +189,12 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			if (pokerDeck.contains(e.getX(), e.getY())) {
 				firePokerPressed = true;
 			} else {
-				checkAndPickUpPokers(e);
+				pokerStackManage.mousePressed(e);
 			}
 		}
-		
+		scorePanel.mousePressed(e);
 	}
 
-	/**
-	 * 检查并拾起扑克牌
-	 * @param e
-	 */
-	private void checkAndPickUpPokers(MouseEvent e) {
-		for (int i = 0; i < pokerStacks.length; i++) {
-			PokerStack stack = pokerStacks[i];
-			if (stack.size() == 0) continue;
-			if (doCheckAndPickUpPoker(i, e.getX(), e.getY(), stack)) break;
-		}
-	}
-
-	private boolean doCheckAndPickUpPoker(int stackIndex, int mouseX, int mouseY, PokerStack stack) {
-		int stackSize  = stack.size();
-		for (int i = stackSize - 1; i >= 0; i--) {
-			if(!stack.get(i).isTurnOver()) continue;
-			Rectangle pressedHitbox = new Rectangle(stack.getLastPokerX(),
-					stack.getLastPokerY() - (stackSize - 1 - i) * TURN_OFFSET, POKER_WIDTH, stackSize - 1 == i ? POKER_HEIGHT : TURN_OFFSET);
-			if (pressedHitbox.contains(mouseX, mouseY) && canPickUp(stack, i, stackSize)) {
-				this.pressedHitbox = pressedHitbox;
-				for (int k = i; k < stackSize; k++) {
-					draggedPokers.add(stack.get(k));
-				}
-				draggedPokerOffsetX = mouseX - pressedHitbox.x;
-				draggedPokerOffsetY = mouseY - pressedHitbox.y;
-				draggedPokerHitbox = new Rectangle(pressedHitbox.x, pressedHitbox.y,
-						POKER_WIDTH,
-						POKER_HEIGHT + (stackSize - 1 - i) * TURN_OFFSET
-						);
-				draggedStackIndex = stackIndex;
-				draggedStartItemIndex = i;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private boolean canPickUp(PokerStack stack, int startIndex, int stackSize) {
-		for (int i = stackSize - 1; i > startIndex ; i--) {
-			if (stack.get(i).getNo().getId() - stack.get(i - 1).getNo().getId() != -1 || 
-					stack.get(i).getType() != stack.get(i - 1).getType()) {
-				return false;
-			}
-		}
-		return true;
-	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
@@ -307,37 +203,24 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			if (pokerDeck.contains(e.getX(), e.getY()) && firePokerPressed) {
 				firePokerPressed = false;
 				doFirePoker(true, false);
-			}
-			if (draggedPokers.size() > 0) {
-				doPlacePokers();
+			} else {
+				pokerStackManage.mouseReleased(e);
 			}
 		}
+		scorePanel.mouseReleased(e);
 	}
 
-	private void doPlacePokers() {
-		for (int i = 0; i < pokerStacks.length; i++) {
-			PokerStack stack =  pokerStacks[i];
-			if (stack.intersects(draggedPokerHitbox) && canPlace(stack, draggedPokers)) { // 判断是否移动到另外的牌堆
-				for (int j = 0; j < draggedPokers.size(); j++) { // 循环放置扑克到另外的牌堆
-					Poker poker = pokerStacks[draggedStackIndex].remove(draggedStartItemIndex);
-					stack.add(poker);
-				}
-				break;
-			}
-		}
-		draggedPokers.clear();
-		draggedPokerHitbox = null;
-		pressedHitbox = null;
-	}
+
+	private boolean firing;
+	private int fireAudioCount = 0;
 
 	
-	private boolean canPlace(PokerStack targetStack, List<Poker> draggedStack) {
-		if (targetStack.size() == 0) return true;
-		Poker draggedFirstPoker = draggedStack.get(0);
-		Poker targetLastPoker =   targetStack.get(targetStack.size() - 1);
-		return targetLastPoker.getNo().getId() - draggedFirstPoker.getNo().getId() == 1;
+	public void updatePockerDeck() {
+		pokerDeck.x = pokerDeckSize == 0 ? pokerDeckStartX : pokerDeckStartX - (pokerDeckSize - 1) * pokerDeckOffsetX;
+		pokerDeck.y = pokerDeckStartY;
+		pokerDeck.width = pokerDeckSize == 0 ? POKER_WIDTH : (pokerDeckSize - 1) * pokerDeckOffsetX + POKER_WIDTH;
 	}
-
+	
 	/**
 	 * 发牌操作
 	 */
@@ -346,18 +229,25 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (int i = 0; i < 10; i++) {
 			if (firePokerIndex >= pokers.length) continue;
 			pokers[firePokerIndex].setTurnOver(turnOver);
-			pokerStacks[i].add(pokers[firePokerIndex]);
+			pokers[firePokerIndex].fire();
+			pokerStackManage.getPokerStacks()[i].add(pokers[firePokerIndex]);
 			firePokerIndex++;
 		}
 		pokerDeckSize--;
 		updatePockerDeck();
+		if (!firstUpdate) {
+			scorePanel.lostScore(1);
+			audioPlayer.playSong(AudioPlayer.FIRE);
+			firing = true;
+			fireAudioCount = 0;
+		}
 	}
 
 	private boolean canFirePoker(boolean isForceFire) {
 		if (isForceFire) return true;
 		if (pokerDeckSize - 1 < 0 ) return false;
-		for (int i = 0; i < pokerStacks.length; i++) {
-			if (pokerStacks[i].size() == 0) return false;
+		for (int i = 0; i < pokerStackManage.getPokerStacks().length; i++) {
+			if (pokerStackManage.getPokerStacks()[i].size() == 0) return false;
 		}
 		return true;
 	}
@@ -371,10 +261,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		if (gameCompleted) return;
-		if (draggedPokers.size() > 0) {
-			draggedPokerHitbox.x = e.getX() - draggedPokerOffsetX;
-			draggedPokerHitbox.y = e.getY() - draggedPokerOffsetY;
-		}
+		pokerStackManage.mouseDragged(e);
 	}
 
 	@Override
@@ -383,15 +270,26 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	}
 	
 	public boolean isDragging(Poker poker) {
-		return draggedPokers.contains(poker);
+		return pokerStackManage.isDragging(poker);
 	}
 	
 	public boolean notDragging(Poker poker) {
-		return !draggedPokers.contains(poker);
+		return pokerStackManage.notDragging(poker);
 	}
 
 	public void completed(PokerTypeEnum type) {
 		completedPokers.add(new Poker(PokerNoEnum.POKER_K, type));
+		if (!firstUpdate) {
+			scorePanel.addScore(100);
+		}
+	}
+
+	public ScorePanel getScorePanel() {
+		return scorePanel;
+	}
+
+	public void tip() {
+		pokerStackManage.tip();
 	}
 	
 }
