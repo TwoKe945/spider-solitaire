@@ -1,22 +1,21 @@
 package cn.com.twoke.game.spider_solitaire.main;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import cn.com.twoke.game.spider_solitaire.audio.AudioPlayer;
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.entity.Poker;
 import cn.com.twoke.game.spider_solitaire.entity.PokerStack;
+import cn.com.twoke.game.spider_solitaire.entity.ScorePanel;
 import cn.com.twoke.game.spider_solitaire.enums.PokerNoEnum;
 import cn.com.twoke.game.spider_solitaire.enums.PokerTypeEnum;
 import cn.com.twoke.game.spider_solitaire.framework.core.Game;
@@ -31,7 +30,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	private PokerStack[] pokerStacks;
 
 	private int pokerDeckSize = 0;
-	private static final float OFFSET_X = 28.54f;
+	private static final float OFFSET_X = (WIDTH - POKER_WIDTH * 10) / 11;
 	public static final int pokerDeckStartX = (int)(OFFSET_X * 10 + 9 * POKER_WIDTH);
 	private static final int pokerDeckStartY = HEIGHT - POKER_HEIGHT - POKER_MARGIN_VALUE;
 	private static final int pokerDeckOffsetX = 5;
@@ -75,10 +74,15 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	
 	private List<Poker> completedPokers;
 	
+	private ScorePanel scorePanel;
+	private AudioPlayer audioPlayer;
+	
 	public SpiderSolitaireGame() {
 		super(SpiderSolitaireGame::buildGamePanel);
 		initFirePockerDeck();
 		addMouseListener();
+		scorePanel = new ScorePanel(200, 100, this);
+		audioPlayer = new AudioPlayer();
 	}
 	
 	/**
@@ -126,6 +130,14 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		completedPokers = new ArrayList<Poker>();
 	}
 	
+	public AudioPlayer getAudioPlayer() {
+		return audioPlayer;
+	}
+
+	public void setAudioPlayer(AudioPlayer audioPlayer) {
+		this.audioPlayer = audioPlayer;
+	}
+
 	@Override
 	protected void update() {
 		if (firstUpdate) {
@@ -141,29 +153,41 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		}
 		
 		updateGameState();
+		
+		if (firing) {
+			if (fireAudioCount >= 100) {
+				audioPlayer.stopSong();
+				fireAudioCount = 0;
+			}
+			fireAudioCount ++;
+		}
 	}
+	
 	
 	private void updateGameState() {
 		if (completedPokers.size() == 8) {
 			gameCompleted = true;
+			audioPlayer.playEffect(AudioPlayer.SUCCESS);
 		}
 	}
 
 	@Override
 	protected void doDraw(Graphics g) {
+		g.setFont(FONT);
 		drawBackground(g);
 		drawFirePokerDeck(g);
 		drawPlayingPokerDeck(g);
 		drawDraggedPokers(g);
 		drawCompletedPokers(g);
+		scorePanel.draw(g);
 		
 		if (gameCompleted) {
 			g.setColor(Color.WHITE);
 			g.setFont(new Font("仿宋",Font.BOLD,100));
-			g.drawString("恭喜您!", (1024 - 300) / 2 , 512 / 2);
+			g.drawString("恭喜您!", (WIDTH - 300) / 2 , HEIGHT / 2);
 		}
 	}
-	
+
 	private void drawCompletedPokers(Graphics g) {
 		for (int i = 0; i < completedPokers.size(); i++) {
 			completedPokers.get(i).draw(g, (int)(OFFSET_X + i * 10), pokerDeckStartY, true);
@@ -211,6 +235,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		});
 	}
 
+	
 	/**
 	 * 绘制游戏牌堆
 	 * @param g
@@ -222,6 +247,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			pokerStacks[i].draw(g, i);
 			final int sizeIndex = i;
 			debug(() -> {
+				g.setColor(Color.WHITE);
 				g.drawString("size:" + pokerStacks[sizeIndex].size(), x, pokerStacks[sizeIndex].getLastPokerY() + TURN_OFFSET + POKER_HEIGHT );
 			});
 		}
@@ -232,8 +258,8 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	 * @param g
 	 */
 	private void drawBackground(Graphics g) {
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 10; y++) {
+		for (int x = 0; x < 20; x++) {
+			for (int y = 0; y < 12; y++) {
 				g.drawImage(ImageResource.BACKGROUND, x * 64 , y * 64, 64, 64, null);
 			}
 		}
@@ -258,6 +284,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			} else {
 				checkAndPickUpPokers(e);
 			}
+			scorePanel.mousePressed(e);
 		}
 		
 	}
@@ -293,6 +320,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 						);
 				draggedStackIndex = stackIndex;
 				draggedStartItemIndex = i;
+				audioPlayer.playEffect(AudioPlayer.PICKUP);
 				return true;
 			}
 		}
@@ -319,6 +347,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 			if (draggedPokers.size() > 0) {
 				doPlacePokers();
 			}
+			scorePanel.mouseReleased(e);
 		}
 	}
 
@@ -330,12 +359,14 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 					Poker poker = pokerStacks[draggedStackIndex].remove(draggedStartItemIndex);
 					stack.add(poker);
 				}
+				scorePanel.lostScore(1);
 				break;
 			}
 		}
 		draggedPokers.clear();
 		draggedPokerHitbox = null;
 		pressedHitbox = null;
+		audioPlayer.playEffect(AudioPlayer.PUTDOWN);
 	}
 
 	
@@ -346,6 +377,9 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		return targetLastPoker.getNo().getId() - draggedFirstPoker.getNo().getId() == 1;
 	}
 	
+	private boolean firing;
+	private int fireAudioCount = 0;
+	
 	/**
 	 * 发牌操作
 	 */
@@ -354,12 +388,18 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (int i = 0; i < 10; i++) {
 			if (firePokerIndex >= pokers.length) continue;
 			pokers[firePokerIndex].setTurnOver(turnOver);
-			pokers[firePokerIndex].setFiring(true);
+			pokers[firePokerIndex].fire();
 			pokerStacks[i].add(pokers[firePokerIndex]);
 			firePokerIndex++;
 		}
 		pokerDeckSize--;
 		updatePockerDeck();
+		if (!firstUpdate) {
+			scorePanel.lostScore(1);
+			audioPlayer.playSong(AudioPlayer.FIRE);
+			firing = true;
+			fireAudioCount = 0;
+		}
 	}
 
 	private boolean canFirePoker(boolean isForceFire) {
@@ -401,6 +441,9 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	public void completed(PokerTypeEnum type) {
 		completedPokers.add(new Poker(PokerNoEnum.POKER_K, type));
+		if (!firstUpdate) {
+			scorePanel.addScore(100);
+		}
 	}
 	
 }

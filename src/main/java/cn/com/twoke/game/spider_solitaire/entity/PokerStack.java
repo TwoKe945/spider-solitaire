@@ -87,7 +87,7 @@ public class PokerStack extends ArrayList<Poker>{
 				temPoker.setTurnOver(true);
 				this.hitbox.height += NO_TURN_OFFSET;
 			}
-			temPoker.draw(g, hitbox.x, temPoker.isFiring() ? index * 20 + 200 :  y , temPoker.isTurnOver());
+			temPoker.draw(g, hitbox.x, temPoker.isFiring()? index * 30 + y : y , temPoker.isTurnOver());
 			y += !temPoker.isTurnOver() ? NO_TURN_OFFSET : TURN_OFFSET; 
 		}
 		

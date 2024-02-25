@@ -3,10 +3,10 @@ package cn.com.twoke.game.spider_solitaire.entity;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
+import cn.com.twoke.game.spider_solitaire.animation.Animation;
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.enums.PokerNoEnum;
 import cn.com.twoke.game.spider_solitaire.enums.PokerTypeEnum;
-import cn.com.twoke.game.spider_solitaire.main.SpiderSolitaireGame;
 
 import static cn.com.twoke.game.spider_solitaire.config.Global.*;
 
@@ -14,23 +14,31 @@ public class Poker  {
 	private PokerNoEnum no;
 	private PokerTypeEnum type;
 	private boolean turnOver;
-	private boolean firing = false;
-	private int aniIndex = 0;
-	private int aniCount = 10;
+	private Animation fireAnimation;
+	private Animation completedAnimation;
 	
 	public Poker(PokerNoEnum no, PokerTypeEnum type) {
 		this.no = no;
 		this.type = type;
+		fireAnimation = new Animation(15);
+		completedAnimation = new Animation();
 	}
 	
 	public boolean isFiring() {
-		return firing;
+		return fireAnimation.isRuning();
 	}
 	
-	public void setFiring(boolean firing) {
-		this.firing = firing;
+	public boolean isCompleted() {
+		return completedAnimation.isRuning();
 	}
-
+	
+	public void fire() {
+		fireAnimation.startAnimation();
+	}
+	
+	public void completed() {
+		completedAnimation.startAnimation();
+	}
 
 	private BufferedImage getFaceImage() {
 		switch (type) {
@@ -48,20 +56,13 @@ public class Poker  {
 	}
 	
 	public void update() {
-		if (firing) {
-			
-			if (aniCount <= aniIndex) {
-				
-				aniIndex = 0;
-				firing = false;
-			}
-			aniIndex++;
-		}
+		fireAnimation.update();
+		completedAnimation.update();
 	}
 
 	public void draw(Graphics g, int startX, int startY, boolean isFace) {
 		BufferedImage image = ImageResource.POKER_BACK;
-		if (isFace) {
+		if (isFace && !fireAnimation.isRuning()) {
 			image = getFaceImage();
 		}
 		g.drawImage(image, startX, startY, POKER_WIDTH, POKER_HEIGHT, null);
