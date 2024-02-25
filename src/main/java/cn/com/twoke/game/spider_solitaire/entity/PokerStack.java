@@ -47,6 +47,9 @@ public class PokerStack extends ArrayList<Poker>{
 	public void update() {
 		updatePokers();
 		updateNotDraggingPokers();
+		for (int i = 0; i < notDraggingPokers.size(); i++) {
+			notDraggingPokers.get(i).update();
+		}
 	}
 	
 	
@@ -76,15 +79,15 @@ public class PokerStack extends ArrayList<Poker>{
 		notDraggingPokers  = stream().filter(solitaireGame::notDragging).collect(Collectors.toList());		
 	}
 
-	public void draw(Graphics g) {
+	public void draw(Graphics g, int index) {
 		int y = hitbox.y;
 		for (int i = 0; i < notDraggingPokers.size(); i++) {
-			Poker temPoker = notDraggingPokers.get(i);
+			Poker temPoker = notDraggingPokers.get(i);	
 			if (!temPoker.isTurnOver() && i == size() - 1) {
 				temPoker.setTurnOver(true);
 				this.hitbox.height += NO_TURN_OFFSET;
 			}
-			temPoker.draw(g, hitbox.x, y , temPoker.isTurnOver());
+			temPoker.draw(g, hitbox.x, temPoker.isFiring() ? index * 20 + 200 :  y , temPoker.isTurnOver());
 			y += !temPoker.isTurnOver() ? NO_TURN_OFFSET : TURN_OFFSET; 
 		}
 		

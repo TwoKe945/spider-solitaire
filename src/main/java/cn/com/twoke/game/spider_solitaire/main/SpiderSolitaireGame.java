@@ -1,7 +1,10 @@
 package cn.com.twoke.game.spider_solitaire.main;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -21,6 +24,7 @@ import cn.com.twoke.game.spider_solitaire.framework.core.GamePanel;
 import cn.com.twoke.game.spider_solitaire.utils.PokerUtils;
 import static cn.com.twoke.game.spider_solitaire.config.Global.*;
 
+
 public class SpiderSolitaireGame extends Game implements MouseListener, MouseMotionListener {
 
 	private Poker[] pokers;
@@ -28,8 +32,8 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	private int pokerDeckSize = 0;
 	private static final float OFFSET_X = 28.54f;
-	private static final int pokerDeckStartX = (int)(OFFSET_X * 10 + 9 * POKER_WIDTH);
-	private static final int pokerDeckStartY = 512 - POKER_HEIGHT - POKER_MARGIN_VALUE;
+	public static final int pokerDeckStartX = (int)(OFFSET_X * 10 + 9 * POKER_WIDTH);
+	private static final int pokerDeckStartY = HEIGHT - POKER_HEIGHT - POKER_MARGIN_VALUE;
 	private static final int pokerDeckOffsetX = 5;
 	private Rectangle pokerDeck;
 	private boolean firstUpdate = true;
@@ -102,7 +106,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	}
 	
 	private static GamePanel buildGamePanel(Game game) {
-		return new GamePanel(game, 1024, 512);
+		return new GamePanel(game, WIDTH, HEIGHT);
 	}
 	
 	private void addMouseListener() {
@@ -148,14 +152,15 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	@Override
 	protected void doDraw(Graphics g) {
 		drawBackground(g);
-		drawPlayingPokerDeck(g);
 		drawFirePokerDeck(g);
+		drawPlayingPokerDeck(g);
 		drawDraggedPokers(g);
 		drawCompletedPokers(g);
 		
 		if (gameCompleted) {
-			g.setColor(new Color(0,0,0,200));
-			g.drawString("Success!!!", 1024 / 2 , 512 / 2);
+			g.setColor(Color.WHITE);
+			g.setFont(new Font("仿宋",Font.BOLD,100));
+			g.drawString("恭喜您!", (1024 - 300) / 2 , 512 / 2);
 		}
 	}
 	
@@ -214,7 +219,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (int i = 0; i < pokerStacks.length; i++) {
 			int x =  (int)(OFFSET_X * (i + 1) + i * POKER_WIDTH);
 			g.drawImage(ImageResource.POKER_EMPTY, x, POKER_MARGIN_VALUE, POKER_WIDTH, POKER_HEIGHT, null);
-			pokerStacks[i].draw(g);
+			pokerStacks[i].draw(g, i);
 			final int sizeIndex = i;
 			debug(() -> {
 				g.drawString("size:" + pokerStacks[sizeIndex].size(), x, pokerStacks[sizeIndex].getLastPokerY() + TURN_OFFSET + POKER_HEIGHT );
@@ -228,7 +233,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 	 */
 	private void drawBackground(Graphics g) {
 		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 8; y++) {
+			for (int y = 0; y < 10; y++) {
 				g.drawImage(ImageResource.BACKGROUND, x * 64 , y * 64, 64, 64, null);
 			}
 		}
@@ -340,7 +345,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		Poker targetLastPoker =   targetStack.get(targetStack.size() - 1);
 		return targetLastPoker.getNo().getId() - draggedFirstPoker.getNo().getId() == 1;
 	}
-
+	
 	/**
 	 * 发牌操作
 	 */
@@ -349,6 +354,7 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 		for (int i = 0; i < 10; i++) {
 			if (firePokerIndex >= pokers.length) continue;
 			pokers[firePokerIndex].setTurnOver(turnOver);
+			pokers[firePokerIndex].setFiring(true);
 			pokerStacks[i].add(pokers[firePokerIndex]);
 			firePokerIndex++;
 		}

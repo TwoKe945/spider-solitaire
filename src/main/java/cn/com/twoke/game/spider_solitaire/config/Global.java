@@ -17,4 +17,7 @@ public class Global {
 	public static final int NO_TURN_OFFSET = 10;
 	public static final int POKER_MARGIN_VALUE = 20;
 	
+	public static final int WIDTH = 1024;
+	public static final int HEIGHT = 640;
+	
 }
