@@ -78,16 +78,21 @@ public class PokerStack extends ArrayList<Poker>{
 	private void updateNotDraggingPokers() {
 		notDraggingPokers  = stream().filter(solitaireGame::notDragging).collect(Collectors.toList());		
 	}
-
-	public void draw(Graphics g, int index) {
+	
+	public void draw(Graphics g, int index, int maskIndex) {
 		int y = hitbox.y;
+		boolean maskFlag = maskIndex != -1;
 		for (int i = 0; i < notDraggingPokers.size(); i++) {
 			Poker temPoker = notDraggingPokers.get(i);	
 			if (!temPoker.isTurnOver() && i == size() - 1) {
 				temPoker.setTurnOver(true);
 				this.hitbox.height += NO_TURN_OFFSET;
 			}
-			temPoker.draw(g, hitbox.x, temPoker.isFiring()? index * 30 + y : y , temPoker.isTurnOver());
+			if (maskFlag && i >= maskIndex) {
+				temPoker.drawMask(g, hitbox.x, y);
+			} else {
+				temPoker.draw(g, hitbox.x, temPoker.isFiring()? index * 30 + y : y , temPoker.isTurnOver());
+			}
 			y += !temPoker.isTurnOver() ? NO_TURN_OFFSET : TURN_OFFSET; 
 		}
 		
@@ -97,6 +102,10 @@ public class PokerStack extends ArrayList<Poker>{
 			g.drawRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height - NO_TURN_OFFSET);
 			g.setColor(color);
 		});
+	}
+	
+	public void draw(Graphics g, int index) {
+		draw(g, index, -1);
 	}
 	
 	public boolean intersects(Rectangle rectangle) {

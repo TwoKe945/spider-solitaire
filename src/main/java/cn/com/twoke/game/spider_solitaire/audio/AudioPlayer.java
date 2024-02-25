@@ -83,6 +83,9 @@ public class AudioPlayer {
     }
 
     public void playEffect(int effectId) {
+    	if (effects[effectId].isActive()) {
+    		effects[effectId].stop();
+    	}
         effects[effectId].setMicrosecondPosition(0);
         effects[effectId].start();
     }

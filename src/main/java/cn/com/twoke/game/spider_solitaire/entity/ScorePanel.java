@@ -32,14 +32,14 @@ public class ScorePanel extends MouseAdapter {
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		if (in(e.getX(), e.getY())) {
+		if (e.getButton() == MouseEvent.BUTTON1 && in(e.getX(), e.getY())) {
 			pressedScorePanel = true;
 		}
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		if (pressedScorePanel) {
+		if (e.getButton() == MouseEvent.BUTTON1 && pressedScorePanel) {
 			tip(); // 提示
 			pressedScorePanel = false;
 		}
@@ -47,8 +47,7 @@ public class ScorePanel extends MouseAdapter {
 
 	
 	private void tip() {
-//		System.out.println("提示一下");
-		game.getAudioPlayer().playEffect(AudioPlayer.TIP);
+		game.tip();
 	}
 	
 	

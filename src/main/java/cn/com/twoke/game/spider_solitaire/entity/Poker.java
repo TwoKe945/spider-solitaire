@@ -7,6 +7,7 @@ import cn.com.twoke.game.spider_solitaire.animation.Animation;
 import cn.com.twoke.game.spider_solitaire.constant.ImageResource;
 import cn.com.twoke.game.spider_solitaire.enums.PokerNoEnum;
 import cn.com.twoke.game.spider_solitaire.enums.PokerTypeEnum;
+import cn.com.twoke.game.spider_solitaire.utils.ImageUtils;
 
 import static cn.com.twoke.game.spider_solitaire.config.Global.*;
 
@@ -67,6 +68,11 @@ public class Poker  {
 		}
 		g.drawImage(image, startX, startY, POKER_WIDTH, POKER_HEIGHT, null);
 		g.drawImage(ImageResource.POKER_MASK, startX, startY, POKER_WIDTH, POKER_HEIGHT, null);
+	}
+	
+	public void drawMask(Graphics g, int startX, int startY) {
+		BufferedImage image = getFaceImage();
+		g.drawImage(ImageUtils.inverse(image), startX, startY, POKER_WIDTH, POKER_HEIGHT, null);
 	}
 
 	public PokerNoEnum getNo() {

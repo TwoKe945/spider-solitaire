@@ -4,7 +4,7 @@ import java.awt.Font;
 
 public class Global {
 
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 
 	public static final Font FONT = new Font("宋体", Font.PLAIN, 15);
 	public static void debug(Runnable runnable) {
