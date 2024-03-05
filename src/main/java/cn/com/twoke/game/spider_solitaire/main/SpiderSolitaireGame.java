@@ -96,14 +96,17 @@ public class SpiderSolitaireGame extends Game implements MouseListener, MouseMot
 
 	@Override
 	protected void update() {
-		if (firstUpdate) {
+		if (firstUpdate && pokerDeckSize > 0) {
 			int autoFireSize = AUTO_FIRE_SIZE;
 			for (int i = 0; i < autoFireSize; i++) {
 				doFirePoker(i == autoFireSize - 1, true);
 			}
 			firstUpdate = false;
 		}
-		pokerStackManage.update();
+		if (Objects.nonNull(pokerStackManage)) {
+			pokerStackManage.update();
+		}
+
 		updateGameState();
 		if (firing) {
 			if (fireAudioCount >= 100) {
